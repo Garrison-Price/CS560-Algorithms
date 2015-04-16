@@ -1,3 +1,4 @@
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.BitSet;
 
@@ -8,7 +9,10 @@ public class HuffmanTree<E> {
 	private int nodesInQueue;
 	private E[] dataSequence;		//Sequence of data to build huffman tree for
 	
-	public HuffmanTree(E[] dataSequence) {
+	private Class<E> c;
+	
+	public HuffmanTree(Class<E> c,E[] dataSequence) {
+		this.c = c;
 		this.dataSequence = dataSequence;
 		wordsInDictionary = 0;
 		BuildTree();
@@ -68,19 +72,41 @@ public class HuffmanTree<E> {
 		return -1;
 	}
 	
-	
-	//NOT YET IMPLEMENTED
 	public BitSet encode(E[] dataSequence) {
 		BitSet encodedData = new BitSet();
+		int encodedBits = 0;
 		for(int dataSequenceIndex = 0; dataSequenceIndex < dataSequence.length;dataSequenceIndex++) {
-			Node<E> currentNode = queue[0]; //Root of tree
-			//Depth first search
+			String path = PathToNode(dataSequence[dataSequenceIndex], queue[0], "");
+			for(int pathIndex = 0; pathIndex < path.length(); pathIndex++) {
+				if(path.substring(pathIndex, pathIndex+1).equals("1"))
+					encodedData.set(encodedBits);
+				encodedBits++;
+			}
 		}
-		return null;
+		return encodedData;
+	}
+	
+	private String PathToNode(E data, Node<E> root, String path) {
+		if(root == null)
+			return "";
+		
+		if(root.left != null && root.left.leafValue != null) {
+			if(((Comparable<E>)root.left.leafValue).compareTo(data) == 0)
+				return "0";
+		}
+		
+		if(root.right != null && root.right.leafValue != null) {
+			if(((Comparable<E>)root.right.leafValue).compareTo(data) == 0)
+				return "1";
+		}
+		
+		String left = PathToNode(data,root.left,path);
+		String right = PathToNode(data,root.right,path);
+		return path + ((left.length() > 0)?("0"+left):("")) + ((right.length() > 0)?("1"+right):(""));
 	}
 	
 	public E[] decode(BitSet dataBits) {
-		E[] dataSequence = (E[]) new Object[dataBits.length()];
+		E[] dataSequence = (E[]) Array.newInstance(c, dataBits.length());
 		int sequenceLength = 0;
 		for(int bitIndex = 0; bitIndex < dataBits.length(); bitIndex++) {
 			Node<E> currentNode = queue[0]; //Root of tree
@@ -118,7 +144,7 @@ public class HuffmanTree<E> {
 	
 	public static void main(String[] args) {
 		String[] fullString = {"O","O","O","O","O","O","O","O","O","O","N","N","N","N","T","T","T","P","S"};
-		HuffmanTree<String> ht = new HuffmanTree<String>(fullString);
+		HuffmanTree<String> ht = new HuffmanTree<String>(String.class,fullString);
 		BitSet bs = new BitSet(16);
 		bs.set(1);
 		bs.set(3);
@@ -128,6 +154,11 @@ public class HuffmanTree<E> {
 		bs.set(13);
 		bs.set(15);
 		
-		System.out.println(bs.toString()+" = "+Arrays.toString(ht.decode(bs)));
+		String[] spoons = {"S","P","O","O","N","S"};
+		
+		
+		String [] dec = ht.decode(bs);
+		BitSet rec = ht.encode(dec);
+		System.out.println(rec.toString()+" = "+Arrays.toString(dec));
 	}
 }
